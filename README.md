@@ -22,6 +22,14 @@ rustup update stable-i686 --no-self-update && rustup default stable-i686
 cargo build --release
 ```
 
+> [!IMPORTANT]
+> Here's the scheduling format
+> > You must follow it to work
+> ```
+> sec   min   hour   day of month   month   day of week   year
+> *     *     *      *              *       *             *
+> ```
+
 ## API
 * #### cron_new(const pattern[], const callback[])
     * `pattern[]` - cron pattern
