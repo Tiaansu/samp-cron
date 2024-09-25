@@ -38,7 +38,7 @@ jobs:
       if: matrix.os == 'ubuntu-20.04'
 
     - name: Install Rust (rustup)
-      run: rustup update ${{ matrix.os }} --no-self-update && rustup default ${{ matrix.rust }}
+      run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       shell: bash
 
     - name: Build
