@@ -3,10 +3,18 @@ name: Build
 on:
   push:
     branches: 
-      - main
+      - "main"
+    paths:
+      - "**.rs"
+      - "cargo.toml"
+      - ".github/workflows/build.yml"
   pull_request: 
     branches:
-      - master
+      - "main"
+    paths:
+      - "**.rs"
+      - "cargo.toml"
+      - ".github/workflows/build.yml"
 
 env:
   RELEASE_BIN: samp_cron
