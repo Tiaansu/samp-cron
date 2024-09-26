@@ -1,6 +1,6 @@
 # SampCRON
 
-A cron plugin for samp/open.mp in Rust.
+A cron plugin for samp/open.mp in Rust. Made using [this library](https://github.com/rs-god/rcron)
 
 ## Installation
 - Download suitable binary files from releases for your operating system.
@@ -101,4 +101,5 @@ cargo build --release
 ---
 
 > [!NOTE]  
-> Most of the part of this README is from/based on [samp-bcrypt](https://github.com/Sreyas-Sreelal/samp-bcrypt)
+> Most of the part of this README is from/based on [samp-bcrypt](https://github.com/Sreyas-Sreelal/samp-bcrypt)   
+> I'm open for suggestions and corrections as I'm still learning Rust.   
