@@ -10,10 +10,11 @@
 #define INVALID_CRON_ID         (CRON:0)
 
 /*
-cron_new(const pattern[], const callback[])
+cron_new(const pattern[], const callback[], const args[] = "", {Float, _}:...)
     Params
         `pattern[]` - cron pattern
         `callback[]` - callback to execute every call
+        `args[]` - custom arguments
 
     Returns
         the cron job id
@@ -23,17 +24,17 @@ cron_new(const pattern[], const callback[])
         new CRON:cron_id = INVALID_CRON_ID;
         main()
         {
-            cron_new("* * * * * *", "SecondTimer");
+            cron_new("* * * * * *", "SecondTimer", "i", 5);
         }
         
-        forward SecondTimer();
-        public SecondTimer()
+        forward SecondTimer(num);
+        public SecondTimer(num)
         {
-            printf("Hi! I am called by cron id: %i", _:cron_id);
+            printf("Hi! I am called by cron id: %i and I also have a custom args: %i!", _:cron_id, num);
         }
         ```
  */
-native CRON:cron_new(const pattern[], const callback[]);
+native CRON:cron_new(const pattern[], const callback[], const args[] = "", {Float, _}:...);
 
 /*
 bool:cron_is_valid(CRON:id)

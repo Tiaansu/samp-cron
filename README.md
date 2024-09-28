@@ -31,9 +31,10 @@ cargo build --release
 > ```
 
 ## API
-* #### cron_new(const pattern[], const callback[])
+* #### cron_new(const pattern[], const callback[], const args[] = "", {Float, _}:...)
     * `pattern[]` - cron pattern
     * `callback[]` - callback to execute every call
+    * `args[]` - custom arguments
 
     **Returns**   
         the cron job id
@@ -43,13 +44,13 @@ cargo build --release
     new CRON:cron_id = INVALID_CRON_ID;
     main()
     {
-        cron_new("* * * * * *", "SecondTimer");
+        cron_new("* * * * * *", "SecondTimer", "i", 5);
     }
     
     forward SecondTimer();
     public SecondTimer()
     {
-        printf("Hi! I am called by cron id: %i", _:cron_id);
+        printf("Hi! I am called by cron id: %i and I also have a custom args: %i!", _:cron_id, num);
     }
     ```
 

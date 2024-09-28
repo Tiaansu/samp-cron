@@ -12,7 +12,7 @@ pub struct SampCron<'a> {
 
 impl SampPlugin for SampCron<'static> {
     fn on_load(&mut self) {
-        info!("Version: 0.0.1");
+        info!("Version: 0.1.0");
     }
 
     fn on_unload(&mut self) {

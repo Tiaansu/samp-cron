@@ -1,4 +1,4 @@
-use crate::internals::insert_uuid;
+use crate::internals::{insert_uuid, ArgumentTypes};
 use log::error;
 use rcron::{Job, Schedule};
 use samp::error::AmxError;
@@ -10,10 +10,47 @@ impl super::SampCron<'static> {
     pub fn cron_new(&mut self, amx: &'static Amx, mut args: samp::args::Args) -> AmxResult<i32> {
         let cron_pattern = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
         let callback_name = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
+        let mut format: Vec<u8> = Vec::new();
+
+        if args.count() > 2 {
+            if let Some(specifiers) = args.next::<AmxString>() {
+                format = specifiers.to_bytes();
+            }
+        }
+
+        if !format.is_empty() && format.len() != args.count() - 3 {
+            error!(
+                "The argument count mismatch expected: {} provided: {}.",
+                format.len(),
+                args.count() - 3
+            );
+            return Ok(0);
+        }
 
         if Schedule::from_str(&cron_pattern).is_err() {
             error!("Invalid CRON expression: {}", cron_pattern);
             return Ok(0);
+        }
+
+        let mut optional_args: Vec<ArgumentTypes> = Vec::new();
+
+        for specifiers in format {
+            match specifiers {
+                b'd' | b'i' | b'f' => {
+                    optional_args.push(ArgumentTypes::Primitive(
+                        *args.next::<Ref<i32>>().ok_or(AmxError::Params)?,
+                    ));
+                }
+                b's' => {
+                    let argument: Ref<i32> = args.next().ok_or(AmxError::Params)?;
+                    let amx_str = AmxString::from_raw(amx, argument.address())?;
+                    optional_args.push(ArgumentTypes::String(amx_str.to_bytes()));
+                }
+                _ => {
+                    error!("Unknown specifier type: {}", specifiers);
+                    return Ok(0);
+                }
+            }
         }
         
         let public_index = amx.find_public(&callback_name);
@@ -24,6 +61,25 @@ impl super::SampCron<'static> {
         }
 
         let job = Job::new(cron_pattern.parse().unwrap(), move || {
+            let allocator = amx.allocator();
+
+            for param in optional_args.iter().rev() {
+                match param {
+                    ArgumentTypes::Primitive(x) => {
+                        if amx.push(x).is_err() {
+                            error!("*Cannot execute callback {:?}", callback_name);
+                        }
+                    }
+                    ArgumentTypes::String(data) => {
+                        let buf = allocator.allot_buffer(data.len() + 1).unwrap();
+                        let amx_str = unsafe { AmxString::new(buf, data) };
+                        if amx.push(amx_str).is_err() {
+                            error!("*Cannot execute callback {:?}", callback_name);
+                        }
+                    }
+                }
+            }
+
             if amx.exec(public_index.as_ref().unwrap().to_owned()).is_err() {
                 error!("Cannot execute callback: {:?}", callback_name);
             }
