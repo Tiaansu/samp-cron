@@ -44,7 +44,7 @@ cargo build --release
     new CRON:cron_id = INVALID_CRON_ID;
     main()
     {
-        cron_new("* * * * * *", "SecondTimer", "i", 5);
+        cron_id = cron_new("* * * * * *", "SecondTimer", "i", 5);
     }
     
     forward SecondTimer();
