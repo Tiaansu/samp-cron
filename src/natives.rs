@@ -12,6 +12,18 @@ impl super::SampCron<'static> {
         let callback_name = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
         let mut format: Vec<u8> = Vec::new();
 
+        let splitted: Vec<&str> = cron_pattern.split(' ').collect();
+
+        if splitted.len() < 6 {
+            error!("Insufficient cron pattern specified. Expected 6, got {}", splitted.len());
+            return Ok(0);
+        }
+
+        if Schedule::from_str(&cron_pattern).is_err() {
+            error!("Invalid CRON expression: {}", cron_pattern);
+            return Ok(0);
+        }
+
         if args.count() > 2 {
             if let Some(specifiers) = args.next::<AmxString>() {
                 format = specifiers.to_bytes();
@@ -24,11 +36,6 @@ impl super::SampCron<'static> {
                 format.len(),
                 args.count() - 3
             );
-            return Ok(0);
-        }
-
-        if Schedule::from_str(&cron_pattern).is_err() {
-            error!("Invalid CRON expression: {}", cron_pattern);
             return Ok(0);
         }
 
