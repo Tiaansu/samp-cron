@@ -24,7 +24,7 @@ cron_new(const pattern[], const callback[], const args[] = "", {Float, _}:...)
         new CRON:cron_id = INVALID_CRON_ID;
         main()
         {
-            cron_new("* * * * * *", "SecondTimer", "i", 5);
+            cron_id = cron_new("* * * * * *", "SecondTimer", "i", 5);
         }
         
         forward SecondTimer(num);
