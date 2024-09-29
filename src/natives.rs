@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 impl super::SampCron<'static> {
     #[native(raw, name = "cron_new")]
-    pub fn cron_new(&mut self, amx: &'static Amx, mut args: samp::args::Args) -> AmxResult<i32> {
+    pub fn cron_new(&mut self, self_amx: &'static Amx, mut args: samp::args::Args) -> AmxResult<i32> {
         let cron_pattern = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
         let callback_name = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
         let mut format: Vec<u8> = Vec::new();
@@ -50,7 +50,7 @@ impl super::SampCron<'static> {
                 }
                 b's' => {
                     let argument: Ref<i32> = args.next().ok_or(AmxError::Params)?;
-                    let amx_str = AmxString::from_raw(amx, argument.address())?;
+                    let amx_str = AmxString::from_raw(self_amx, argument.address())?;
                     optional_args.push(ArgumentTypes::String(amx_str.to_bytes()));
                 }
                 _ => {
@@ -59,38 +59,38 @@ impl super::SampCron<'static> {
                 }
             }
         }
-        
-        let public_index = amx.find_public(&callback_name);
 
-        if public_index.is_err() {
-            error!("Invalid public: {}", callback_name);
-            return Ok(0);
-        }
+        let raw = self_amx.ident();
 
         let job = Job::new(cron_pattern.parse().unwrap(), move || {
-            let allocator = amx.allocator();
+            if let Some(amx) = samp::amx::get(raw) {
+                let allocator = amx.allocator();
 
-            for param in optional_args.iter().rev() {
-                match param {
-                    ArgumentTypes::Primitive(x) => {
-                        if amx.push(x).is_err() {
-                            error!("*Cannot execute callback {:?}", callback_name);
+                for param in optional_args.iter().rev() {
+                    match param {
+                        ArgumentTypes::Primitive(x) => {
+                            if amx.push(x).is_err() {
+                                error!("Cannot execute callback {:?} [1]", callback_name);
+                            }
                         }
-                    }
-                    ArgumentTypes::String(data) => {
-                        let buf = allocator.allot_buffer(data.len() + 1).unwrap();
-                        let amx_str = unsafe { AmxString::new(buf, data) };
-                        if amx.push(amx_str).is_err() {
-                            error!("*Cannot execute callback {:?}", callback_name);
+                        ArgumentTypes::String(data) => {
+                            let buf = allocator.allot_buffer(data.len() + 1).unwrap();
+                            let amx_str = unsafe { AmxString::new(buf, data) };
+                            if amx.push(amx_str).is_err() {
+                                error!("Cannot execute callback {:?} [2]", callback_name);
+                            }
                         }
                     }
                 }
-            }
 
-            if amx.exec(public_index.as_ref().unwrap().to_owned()).is_err() {
-                error!("Cannot execute callback: {:?}", callback_name);
+                if let Ok(index) = amx.find_public(&callback_name) {
+                    if amx.exec(index).is_err() {
+                        error!("Cannot execute callback {:?}", callback_name);
+                    }
+                }
             }
         });
+
         let uuid = self.scheduler.add(job);
         let id = insert_uuid(self, uuid);
 

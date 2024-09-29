@@ -17,6 +17,10 @@ impl SampPlugin for SampCron<'static> {
 
     fn on_unload(&mut self) {
         info!("unloading plugin...");
+        for schedule in self.schedules.iter() {
+            self.scheduler.remove(schedule.clone());
+        }
+        info!("unloaded plugin.");
     }
 
     fn on_amx_load(&mut self, amx: &Amx) {
