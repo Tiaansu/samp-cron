@@ -24,6 +24,9 @@ impl SampPlugin for SampCron<'static> {
     }
 
     fn on_amx_load(&mut self, amx: &Amx) {
+        for schedule in self.schedules.iter() {
+            self.scheduler.remove(schedule.clone());
+        }
         self.amx_list.push(amx.ident());
     }
 
