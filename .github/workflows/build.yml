@@ -1,16 +1,15 @@
 name: Build
 
 on:
+  workflow_dispatch:
   push:
-    branches: 
-      - "main"
+    branches: [main]
     paths:
       - "**.rs"
       - "cargo.toml"
       - ".github/workflows/build.yml"
-  pull_request: 
-    branches:
-      - "main"
+  pull_request:
+    branches: [main]
     paths:
       - "**.rs"
       - "cargo.toml"
@@ -18,57 +17,69 @@ on:
 
 env:
   RELEASE_BIN: samp_cron
-  RELEASE_ADDS: README.md LICENSE include/samp_cron.inc
 
 jobs:
-  build:
-    name: Build release
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        build: [linux, windows]
-        include:
-          - build: linux
-            os: ubuntu-20.04
-            rust: stable-i686
-          - build: windows
-            os: windows-latest
-            rust: stable-i686
+  build-windows:
+    runs-on: windows-latest
+    env:
+      RUST: stable-i686
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install gcc-multilib
-      run: |
-        sudo apt update
-        sudo apt install gcc-multilib -y
-      if: matrix.os == 'ubuntu-20.04'
+      - name: Install Rust (rustup)
+        run: rustup update ${{ env.RUST }} --no-self-update && rustup default ${{ env.RUST }}
 
-    - name: Install Rust (rustup)
-      run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
-      shell: bash
+      - name: Build
+        run: cargo build --release
 
-    - name: Build
-      run: cargo build --verbose --release
+      - name: Create artifacts directory
+        run: |
+          mkdir artifacts/plugins
+          mkdir artifacts/pawno/include
+          mkdir artifacts/qawno/include
 
-    - name: Create artifact directory
-      run: mkdir artifacts
+      - name: Copy files to artifacts directory
+        run: |
+          cp .\target\release\${{ env.RELEASE_BIN }}.dll .\artifacts\plugins\${{ env.RELEASE_BIN }}.dll
+          cp ./include/* ./artifacts/pawno/include/
+          cp ./include/* ./artifacts/qawno/include/
 
-    - name: Rename Linux binary
-      run: mv ./target/release/lib${{ env.RELEASE_BIN }}.so ./target/release/${{ env.RELEASE_BIN }}.so
-      if: matrix.os == 'ubuntu-20.04'
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: samp-cron-windows
+          path: artifacts/
 
-    - name: Create archive for Linux
-      run: 7z a -ttar -so -an ./target/release/${{ env.RELEASE_BIN }}.so ${{ env.RELEASE_ADDS  }} | 7z a -si ./artifacts/${{ env.RELEASE_BIN }}-linux-x86.tar.gz
-      if: matrix.os == 'ubuntu-20.04'
+  build-linux:
+    runs-on: ubuntu-latest
+    env:
+      RUST: i686-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Create archive for Windows
-      run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-windows-x86.zip ./target/release/${{ env.RELEASE_BIN }}.dll ${{ env.RELEASE_ADDS }}
-      if: matrix.os == 'windows-latest'
+      - name: Build using Docker
+        shell: bash
+        run: |
+          cd docker
+          chmod +x ./build.sh
+          chmod +x ./docker-entrypoint.sh
+          ./build.sh
 
-    - uses: actions/upload-artifact@v4
-      name: Upload archive
-      with:
-        name: ${{ runner.os }}
-        path: artifacts/
+      - name: Create artifacts directory
+        run: |
+          mkdir -p artifacts/plugins
+          mkdir -p artifacts/pawno/include
+          mkdir -p artifacts/qawno/include
+
+      - name: Copy files to artifacts directory
+        run: |
+          cp target/${{ env.RUST }}/release/lib${{ env.RELEASE_BIN }}.so artifacts/plugins/${{ env.RELEASE_BIN}}.so
+          cp ./include/* ./artifacts/pawno/include/
+          cp ./include/* ./artifacts/qawno/include/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: samp-cron-linux
+          path: artifacts/
