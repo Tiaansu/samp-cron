@@ -7,15 +7,28 @@ use std::str::FromStr;
 
 impl super::SampCron<'static> {
     #[native(raw, name = "cron_new")]
-    pub fn cron_new(&mut self, self_amx: &'static Amx, mut args: samp::args::Args) -> AmxResult<i32> {
-        let cron_pattern = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
-        let callback_name = args.next::<AmxString>().ok_or(AmxError::Params)?.to_string();
+    pub fn cron_new(
+        &mut self,
+        self_amx: &'static Amx,
+        mut args: samp::args::Args,
+    ) -> AmxResult<i32> {
+        let cron_pattern = args
+            .next::<AmxString>()
+            .ok_or(AmxError::Params)?
+            .to_string();
+        let callback_name = args
+            .next::<AmxString>()
+            .ok_or(AmxError::Params)?
+            .to_string();
         let mut format: Vec<u8> = Vec::new();
 
         let splitted: Vec<&str> = cron_pattern.split(' ').collect();
 
         if splitted.len() < 6 {
-            error!("Insufficient cron pattern specified. Expected 6, got {}", splitted.len());
+            error!(
+                "Insufficient cron pattern specified. Expected 6, got {}",
+                splitted.len()
+            );
             return Ok(0);
         }
 
@@ -111,5 +124,14 @@ impl super::SampCron<'static> {
         } else {
             Ok(false)
         }
+    }
+
+    #[native(name = "cron_get_remaining_time")]
+    pub fn cron_get_remaining_time(&mut self, _: &Amx, value: i32) -> AmxResult<i32> {
+        let index = value as usize - 1;
+        if let Some(job_id) = self.schedules.get(index).cloned() {
+            return Ok((self.scheduler.get_job_remaining_time(job_id) + 1) as i32);
+        }
+        Ok(0)
     }
 }

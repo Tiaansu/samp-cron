@@ -88,3 +88,14 @@ bool:cron_delete(CRON:id)
         ```
  */
 native bool:cron_delete(CRON:id);
+
+/**
+cron_get_remaining_time(CRON:id)
+    Params
+        `id` - id of cron job
+
+    Returns
+        -1 - invalid
+        remaining seconds for the job
+ */
+native cron_get_remaining_time(CRON:id);

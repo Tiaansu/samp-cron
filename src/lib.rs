@@ -1,6 +1,6 @@
-mod plugin;
 mod internals;
 mod natives;
+mod plugin;
 
 use plugin::SampCron;
 use rcron::JobScheduler;
@@ -10,7 +10,8 @@ initialize_plugin!(
     natives: [
         SampCron::cron_new,
         SampCron::cron_delete,
-        SampCron::cron_is_valid
+        SampCron::cron_is_valid,
+        SampCron::cron_get_remaining_time
     ],
     {
         samp::plugin::enable_process_tick();
