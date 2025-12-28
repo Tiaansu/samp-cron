@@ -1,6 +1,6 @@
 # SampCRON
 
-A cron plugin for samp/open.mp in Rust. Made using [this library](https://github.com/rs-god/rcron)
+A cron plugin for samp/open.mp in Rust. Made using [this library](https://github.com/BlackDex/job_scheduler)
 
 ## Installation
 - Download suitable binary files from releases for your operating system.
@@ -24,7 +24,7 @@ cargo build --release
 
 > [!IMPORTANT]
 > Here's the scheduling format
-> > You must follow it to work
+> > You can check [this](https://github.com/Hexagon/croner-rust#pattern) to check for more patterns.
 > ```
 > sec   min   hour   day of month   month   day of week   year
 > *     *     *      *              *       *             *
