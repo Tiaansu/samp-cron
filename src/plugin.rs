@@ -1,18 +1,31 @@
+use std::time::{Duration, Instant};
+
+use job_scheduler_ng::{Cron, JobScheduler, Uuid, MIN_DURATION};
 use log::info;
-use rcron::{JobScheduler, Uuid};
 use samp::amx::AmxIdent;
 use samp::plugin::SampPlugin;
 use samp::prelude::*;
+
+pub struct JobInfo {
+    pub id: usize,
+    pub schedule: Cron,
+}
 
 pub struct SampCron<'a> {
     pub amx_list: Vec<AmxIdent>,
     pub scheduler: JobScheduler<'a>,
     pub schedules: Vec<Uuid>,
+    pub next_tick: Instant,
+    pub job_infos: Vec<JobInfo>,
 }
 
 impl SampPlugin for SampCron<'static> {
     fn on_load(&mut self) {
-        info!("Version: 0.1.0");
+        info!("Version: 0.2.0");
+        self.next_tick = Instant::now();
+
+        let local_tz = chrono::Local::now();
+        self.scheduler.set_timezone(*local_tz.offset());
     }
 
     fn on_unload(&mut self) {
@@ -34,6 +47,11 @@ impl SampPlugin for SampCron<'static> {
     }
 
     fn process_tick(&mut self) {
-        self.scheduler.tick();
+        let now = Instant::now();
+
+        if now >= self.next_tick {
+            self.scheduler.tick();
+            self.next_tick = now + Duration::from_millis(MIN_DURATION);
+        }
     }
 }

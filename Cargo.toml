@@ -16,4 +16,5 @@ panic = "abort"
 samp = {git="https://github.com/Pycckue-Bnepeg/samp-rs"}
 log = "0.4.6"
 fern = "0.5.7"
-rcron = {git="https://github.com/Tiaansu/rcron"}
+chrono = "*"
+job_scheduler_ng = { version = "*", default-features = false, features = ["croner"] }

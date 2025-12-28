@@ -1,9 +1,11 @@
-use crate::internals::{insert_uuid, ArgumentTypes};
+use std::str::FromStr;
+
+use crate::internals::{get_job_remaining_time, insert_uuid, ArgumentTypes};
+use crate::plugin::JobInfo;
+use job_scheduler_ng::{Cron, Job};
 use log::error;
-use rcron::{Job, Schedule};
 use samp::error::AmxError;
 use samp::{native, prelude::*};
-use std::str::FromStr;
 
 impl super::SampCron<'static> {
     #[native(raw, name = "cron_new")]
@@ -22,17 +24,7 @@ impl super::SampCron<'static> {
             .to_string();
         let mut format: Vec<u8> = Vec::new();
 
-        let splitted: Vec<&str> = cron_pattern.split(' ').collect();
-
-        if splitted.len() < 6 {
-            error!(
-                "Insufficient cron pattern specified. Expected 6, got {}",
-                splitted.len()
-            );
-            return Ok(0);
-        }
-
-        if Schedule::from_str(&cron_pattern).is_err() {
+        if Cron::from_str(&cron_pattern).is_err() {
             error!("Invalid CRON expression: {}", cron_pattern);
             return Ok(0);
         }
@@ -75,7 +67,8 @@ impl super::SampCron<'static> {
 
         let raw = self_amx.ident();
 
-        let job = Job::new(cron_pattern.parse().unwrap(), move || {
+        let pattern: Cron = cron_pattern.parse().unwrap();
+        let job = Job::new(pattern.clone(), move || {
             if let Some(amx) = samp::amx::get(raw) {
                 let allocator = amx.allocator();
 
@@ -107,6 +100,11 @@ impl super::SampCron<'static> {
         let uuid = self.scheduler.add(job);
         let id = insert_uuid(self, uuid);
 
+        self.job_infos.push(JobInfo {
+            id,
+            schedule: pattern,
+        });
+
         Ok(id.as_cell())
     }
 
@@ -127,11 +125,7 @@ impl super::SampCron<'static> {
     }
 
     #[native(name = "cron_get_remaining_time")]
-    pub fn cron_get_remaining_time(&mut self, _: &Amx, value: i32) -> AmxResult<i32> {
-        let index = value as usize - 1;
-        if let Some(job_id) = self.schedules.get(index).cloned() {
-            return Ok((self.scheduler.get_job_remaining_time(job_id) + 1) as i32);
-        }
-        Ok(0)
+    pub fn cron_get_remaining_time(&mut self, _: &Amx, index: usize) -> AmxResult<i32> {
+        Ok(get_job_remaining_time(self, index))
     }
 }
