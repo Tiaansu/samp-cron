@@ -50,6 +50,9 @@ impl SampPlugin for SampCron<'static> {
         let now = Instant::now();
 
         if now >= self.next_tick {
+            let local_tz = chrono::Local::now();
+            self.scheduler.set_timezone(*local_tz.offset());
+
             self.scheduler.tick();
             self.next_tick = now + Duration::from_millis(MIN_DURATION);
         }
