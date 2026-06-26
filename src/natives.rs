@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
-use crate::internals::{get_job_remaining_time, insert_uuid, ArgumentTypes};
+use crate::internals::{get_job_remaining_time, insert_job, ArgumentTypes};
 use crate::plugin::JobInfo;
-use job_scheduler_ng::{Cron, Job};
+use croner::Cron;
 use log::error;
 use samp::error::AmxError;
 use samp::{native, prelude::*};
@@ -66,9 +66,9 @@ impl super::SampCron<'static> {
         }
 
         let raw = self_amx.ident();
-
         let pattern: Cron = cron_pattern.parse().unwrap();
-        let job = Job::new(pattern.clone(), move || {
+
+        let callback = Box::new(move || {
             if let Some(amx) = samp::amx::get(raw) {
                 let allocator = amx.allocator();
 
@@ -94,31 +94,34 @@ impl super::SampCron<'static> {
                         error!("Cannot execute callback {:?}", callback_name);
                     }
                 }
+            } else {
+                error!("AMX not found when firing callback {:?}", callback_name);
             }
         });
 
-        let uuid = self.scheduler.add(job);
-        let id = insert_uuid(self, uuid);
+        let id = insert_job();
 
         self.job_infos.push(JobInfo {
             id,
             schedule: pattern,
+            last_tick: None,
+            callback,
         });
 
-        Ok(id.as_cell())
+        Ok(id as i32)
     }
 
     #[native(name = "cron_is_valid")]
     pub fn cron_is_valid(&mut self, _: &Amx, index: i32) -> AmxResult<bool> {
-        Ok(self.schedules.get(index as usize - 1).is_some())
+        Ok(self.job_infos.iter().any(|j| j.id == index as usize))
     }
 
     #[native(name = "cron_delete")]
     pub fn cron_delete(&mut self, _: &Amx, value: i32) -> AmxResult<bool> {
-        let index = value as usize - 1;
-        if let Some(job_id) = self.schedules.get(index).cloned() {
-            self.schedules.remove(index);
-            Ok(self.scheduler.remove(job_id))
+        let id = value as usize;
+        if let Some(index) = self.job_infos.iter().position(|j| j.id == id) {
+            self.job_infos.remove(index);
+            Ok(true)
         } else {
             Ok(false)
         }

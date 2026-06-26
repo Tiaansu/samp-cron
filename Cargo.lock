@@ -351,6 +351,7 @@ name = "samp-cron"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "croner",
  "fern",
  "job_scheduler_ng",
  "log",

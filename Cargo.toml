@@ -18,3 +18,4 @@ log = "0.4.6"
 fern = "0.5.7"
 chrono = "*"
 job_scheduler_ng = { version = "*", default-features = false, features = ["croner"] }
+croner = "3.0.0"

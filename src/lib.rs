@@ -2,9 +2,6 @@ mod internals;
 mod natives;
 mod plugin;
 
-use std::time::Instant;
-
-use job_scheduler_ng::JobScheduler;
 use plugin::SampCron;
 use samp::initialize_plugin;
 
@@ -27,12 +24,6 @@ initialize_plugin!(
             .chain(samp_logger)
             .apply();
 
-        SampCron {
-            amx_list:Vec::new(),
-            scheduler:JobScheduler::new(),
-            schedules: Vec::new(),
-            next_tick: Instant::now(),
-            job_infos: Vec::new(),
-        }
+        SampCron::new()
     }
 );
